@@ -3,11 +3,7 @@
 
 #include "dictionary.h"
 
-
-void convertToXml(const Dictionary& dictionary);
-void convertFromXml(const std::string& xmlString);
-Dictionary inputDictionaryRecord();
-std::string getXmlStringFromUser();
 unsigned int showMenuAndGetChoice();
+std::string readNameFile();
 
 #endif

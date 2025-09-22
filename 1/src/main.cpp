@@ -4,33 +4,35 @@
 #include <limits>
 #include <cstring>
 #include "dialog.h"
+#include <vector>
+#include <algorithm>
+
+
 
 int main(){
-    Dictionary dictionary;
+    std::vector <Dictionary> dictionary;
     while(1){
         unsigned int option;
         try{
             option = showMenuAndGetChoice();
             
             switch (option){
-                case 1: {
-                    dictionary = inputDictionaryRecord();
+                case 1:{
+                    dictionary = readDictionaryFromFile();
+                    writeFile_ToXml(dictionary);
                     break;
                 }
                 case 2:{
-                    convertToXml(dictionary);
+                    dictionary = readXmlFromFile();
+                    writeFile_FromXml(dictionary);
                     break;
                 }
                 case 3:{
-                    std::string xmlString = getXmlStringFromUser();
-                    convertFromXml(xmlString);
-                }
-                case 4:{
                     return 0;
                     break;
                 }
                 default:{
-                    throw std::out_of_range("Invalid option. Please choose 1-4.");
+                    throw std::out_of_range("Invalid option. Please choose 1-3.");
                     break;
                 }
             }
