@@ -148,14 +148,14 @@ void writeToFile_Converter(const std::vector<Dictionary>& dictionary, const std:
     }
 
     file << "<records>\n";
-    for(const auto& dict: dictionary){
+    std::for_each(dictionary.begin(), dictionary.end(), [&file, recordName, &converter](const Dictionary& dict) {
         auto form = converter(dict, recordName);
         file << form << "\n";
 
         if constexpr (std::is_same_v<decltype(form), char*>) {
             delete[] form;
         }
-    }
+    });
     file << "</records>\n";
     file.close();
 }
@@ -167,9 +167,9 @@ void writeFromFile_Converter(const std::vector<Dictionary>& dictionary, const st
         throw std::runtime_error("Cannot open file: " + fileName);
     }
     
-    for (const auto& dict : dictionary) {
+    std::for_each(dictionary.begin(), dictionary.end(), [&file](const Dictionary &dict){
         file << dict.word << "\n" << dict.meaning << "\n" << dict.emphasis << "\n";
-    }
+    });
     file.close();
 }
 
