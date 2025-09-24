@@ -19,11 +19,13 @@ int main(){
             switch (option){
                 case 1:{
                     dictionary = readDictionaryFromFile();
+                    sortDictionary(dictionary);
                     writeFile_ToXml(dictionary);
                     break;
                 }
                 case 2:{
                     dictionary = readXmlFromFile();
+                    sortDictionary(dictionary);
                     writeFile_FromXml(dictionary);
                     break;
                 }

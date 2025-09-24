@@ -7,7 +7,7 @@
 #include <vector>
 #include <fstream>
 #include <format>
-
+#include <algorithm>
 
 using namespace std::string_literals;
 
@@ -21,7 +21,7 @@ char* toXml(const Dictionary& record, const char* recordName){
     }
     std::string stringXml = xmlLine(record, std::string(recordName));
     char* res = new char[stringXml.length() + 1];
-    strncpy(res, stringXml.c_str(), stringXml.length() + 1);
+    std::copy(stringXml.begin(), stringXml.end(), res);
     res[stringXml.length()] = '\0';
     return res;
 }
@@ -33,7 +33,7 @@ char* toXml(const Dictionary& record, const char* recordName, size_t nameSize){
     std::string stringNameRecord(recordName, nameSize);
     std::string stringXml = xmlLine(record, std::string(recordName));
     char* res = new char[stringXml.length() + 1];
-    std::strncpy(res, stringXml.c_str(), stringXml.length() + 1);
+    std::copy(stringXml.begin(), stringXml.end(), res);
     res[stringXml.length()] = '\0';
     return res;
 }
@@ -70,20 +70,19 @@ Dictionary fromXml(const char* xmlString, size_t xmlSize, const char* recordName
 
 
 std::string findWord(std::string wordStart, std::string wordFinish, const std::string& xmlString) noexcept {
-    size_t indexWordStart = xmlString.find(wordStart);
-    if (indexWordStart == std::string::npos) {
-        return "";
-    }
-    indexWordStart += wordStart.length();
-    size_t indexWordEnd = xmlString.find(wordFinish, indexWordStart);
-    if (indexWordEnd == std::string::npos) {
-        return "";
-    }
-    if (indexWordEnd > indexWordStart){
-        return xmlString.substr(indexWordStart, indexWordEnd - indexWordStart);
+    auto startIt = std::search(xmlString.begin(), xmlString.end(), wordStart.begin(), wordStart.end());
+    if(startIt == xmlString.end()) {return "";}
+
+    startIt += wordStart.length();
+    auto endIt = std::search(startIt, xmlString.end(), wordFinish.begin(), wordFinish.end());
+    if (endIt == xmlString.end()) {return "";}
+
+    if (endIt > startIt) {
+        return std::string(startIt, endIt);
     }
     return "";
 }
+
 
 Dictionary fromXml(const std::string& xmlString, const std::string& recordName){
     Dictionary dictionary;
@@ -174,7 +173,6 @@ void writeFromFile_Converter(const std::vector<Dictionary>& dictionary, const st
     file.close();
 }
 
-
 void writeConverterFiles(const std::vector<Dictionary>& dictionary, 
                        const std::string& extension,
                        bool isXmlConversion) {
@@ -214,18 +212,18 @@ std::string fileReader(){
     if(!file.is_open()) {
         throw std::runtime_error("Cannot open file: " + fileName);
     }
-
     std::string xmlContent;
     std::string line;
     while(std::getline(file, line)) {
         xmlContent += line + "\n";
     }
     file.close();
+    return xmlContent;
 }
 
 std::vector <Dictionary> readDictionaryFromFile(){
     std::vector<Dictionary> dictionary;
-    std::string xmlContent = fileReader();
+    std::string fileContent = fileReader();
     size_t pos = 0;
     while (pos < fileContent.length()) {
         Dictionary dict;
@@ -249,6 +247,7 @@ std::vector <Dictionary> readDictionaryFromFile(){
         if (nextRecord == std::string::npos) break;
         pos = nextRecord;
     }
+    return dictionary;
 }
 
 
@@ -283,4 +282,9 @@ std::vector<Dictionary> readXmlFromFile() {
     }
     
     return dictionary;
+}
+
+
+void sortDictionary(std::vector <Dictionary> &dict){
+    std::sort(dict.begin(), dict.end(), [](const Dictionary &a, const Dictionary &b ){return a.word < b.word;});
 }

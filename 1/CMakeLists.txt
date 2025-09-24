@@ -6,10 +6,25 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_COMPILER "/usr/bin/g++-13")
 
-add_executable(lab1
-    src/main.cpp
+set(SOURCES
     src/dialog.cpp
     src/dictionary.cpp
 )
 
-target_include_directories(lab1 PRIVATE include)
+set(HEADERS
+    include/dialog.h
+    include/dictionary.h
+)
+
+add_library(dictlib
+    ${SOURCES}
+    ${HEADERS}
+)
+
+target_include_directories(dictlib
+    PUBLIC include
+)
+
+add_executable(lab1 src/main.cpp)
+
+target_link_libraries(lab1 PRIVATE dictlib)

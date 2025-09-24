@@ -20,9 +20,10 @@ Dictionary fromXml(const char* xmlString, size_t xmlSize, const char* recordName
 Dictionary fromXml(const std::string& xmlString, const std::string& recordName);
 
 void writeFile_ToXml(const std::vector<Dictionary>& dictionary);
-///void writeFile_FromXml(const std::vector<Dictionary>& dictionary);
 void writeFile_FromXml(const std::vector<Dictionary>& dictionary);
 std::vector <Dictionary> readDictionaryFromFile();
 std::vector <Dictionary> readXmlFromFile();
+
+void sortDictionary(std::vector <Dictionary> &dict);
 
 #endif
