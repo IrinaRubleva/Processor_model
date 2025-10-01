@@ -7,7 +7,9 @@
 #include <cstddef>
 
 
-
+/**
+ * 
+ */
 BinarySignal::BinarySignal(const std::string& str): signal(nullptr), size(0), capacity(0){
     if(str.empty()) return;
 
