@@ -97,6 +97,10 @@ public:
      * @brief для вывода экземпляра сложного класса в выходной поток;
      */
     friend std::istream & operator>>(std::istream & is, SignalState & state);
+    /**
+     * @brief префиксный оператор для инверсии уровня сигнала
+     */
+    SignalState & operator~ ();
 
 private: 
     bool level;

@@ -182,3 +182,18 @@ TEST(SignalStateTest, SetLevelIntInvalid) {
     EXPECT_THROW(state.setLevelInt(-1), std::invalid_argument);
     EXPECT_THROW(state.setLevelInt(10), std::invalid_argument);
 }
+
+
+TEST(SignalStateTest, InversionOperator) {
+    SignalState state1(true, 5);
+    SignalState state2(false, 3);
+    
+    ~state1;
+    ~state2;
+    
+    EXPECT_FALSE(state1.getLevel()); 
+    EXPECT_TRUE(state2.getLevel());
+
+    EXPECT_EQ(state1.getDuration(), 5);
+    EXPECT_EQ(state2.getDuration(), 3);
+}

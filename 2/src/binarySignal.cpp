@@ -5,44 +5,94 @@
 #include <stdexcept>
 #include <limits>
 #include <cstddef>
+#include <numeric>
 
 
-/**
- * 
- */
 BinarySignal::BinarySignal(const std::string& str): signal(nullptr), size(0), capacity(0){
-    if(str.empty()) return;
-
-    char currlvl = str[0];
-    size_t duration = 0;
-    for(size_t i = 0; i < str.length(); i++){
-        if (str[i] != '0' && str[i] != '1'){
-            throw std::invalid_argument("Signal must be 0 or 1!");
+    try
+    {
+        if(str.empty()) return;
+        
+        char currlvl = str[0];
+        size_t duration = 1;
+        
+        for(size_t i = 1; i < str.length(); i++){
+            if (str[i] != '0' && str[i] != '1'){
+                throw std::invalid_argument("Signal must be 0 or 1!");
+            }
+            
+            if (str[i] == currlvl){ 
+                duration++;
+            }
+            else{
+                bool level = (currlvl == '1');
+                push_back(SignalState(level, duration));
+                currlvl = str[i];
+                duration = 1;
+            }
         }
-        if (str[i] == currlvl){ 
-            duration++;
-        }
-        else{
-            push_back(SignalState(currlvl, duration));
-            currlvl = str[i];
-            duration = 1;
-        }
+        bool final_level = (currlvl == '1');
+        push_back(SignalState(final_level, duration));
     }
-    push_back(SignalState(currlvl, duration));
+    catch(...)
+    {
+        delete[] signal;
+        throw;
+    }
 }
+
 
 BinarySignal::BinarySignal(bool lvl, std::size_t dur) {
-    if (dur == 0){ throw std::invalid_argument("Duration shoud me positive!");}
-    push_back(SignalState(lvl, dur));
+    try
+    {
+        if (dur == 0){ throw std::invalid_argument("Duration shoud me positive!");}
+        push_back(SignalState(lvl, dur));
+    }
+    catch(...)
+    {
+        delete[] signal;
+        throw;
+    }
 }
 
 
+BinarySignal & BinarySignal:: mergeStates(){
+     if (size <= 1) { return *this;}
 
-
-BinarySignal& BinarySignal:: operator=(const BinarySignal& other) {
-    signal = other.signal;
+    BinarySignal merged;
+    merged.push_back(signal[0]);
+    
+    for (size_t i = 1; i < size; ++i) {
+        if (signal[i].getLevel() == merged.back().getLevel()) {
+            size_t newDuration = merged.back().getDuration() + signal[i].getDuration();
+            merged.back().setDuration(newDuration);
+        } else {
+            merged.push_back(signal[i]);
+        }
+    }
+    
+    *this = std::move(merged);
     return *this;
 }
+
+
+
+BinarySignal& BinarySignal::operator=(const BinarySignal& other) {
+    if (this != &other) {
+        BinarySignal temp(other);
+        swap(*this, temp);
+    }
+    return *this;
+}
+BinarySignal& BinarySignal::operator=(BinarySignal&& other) noexcept {
+    if (this != &other) {
+        swap(*this, other);
+    }
+    return *this;
+}
+
+
+
 BinarySignal& BinarySignal:: operator+=(const BinarySignal& other) {
     for(std::size_t i = 0; i < other.size; i++){
         push_back(other.signal[i]);
@@ -54,10 +104,9 @@ BinarySignal BinarySignal:: operator*(std::size_t n) const {
 
     BinarySignal res;
     for(std::size_t i = 0; i < n; i++){
-        for (std::size_t j = 0; j < size; ++j) {
-            res.push_back(signal[j]);
-        }
+        res += *this;
     } 
+    res.mergeStates();
     return res;
 }
 
@@ -78,32 +127,23 @@ bool BinarySignal:: operator[](std::size_t time) const {
 }
 
 
-BinarySignal:: BinarySignal(const BinarySignal & other){
-    expander(other.size);
-    for(std::size_t i = 0; i < other.size; i++){
-        push_back(other.signal[i]);
-    }
+BinarySignal::BinarySignal(BinarySignal&& other) noexcept 
+    : signal(nullptr), size(0), capacity(0) {
+    swap(*this, other);
 }
 
-BinarySignal:: BinarySignal(BinarySignal &&other): signal(other.signal), size(other.size), capacity(other.capacity) {
-    other.signal = nullptr;
-    other.size = 0;
-    other.capacity = 0;   
-}
 
-BinarySignal& BinarySignal:: operator=(BinarySignal&& other) {
-    if (this != &other) {
-        delete[] signal;
-
-        signal = other.signal;
+BinarySignal::BinarySignal(const BinarySignal& other) 
+    : signal(nullptr), size(0), capacity(0) {
+    
+    if (other.size > 0) {
+        signal = new SignalState[other.capacity];
+        for (size_t i = 0; i < other.size; ++i) {
+            signal[i] = other.signal[i];
+        }
         size = other.size;
         capacity = other.capacity;
-        
-        other.signal = nullptr;
-        other.size = 0;
-        other.capacity = 0;
     }
-    return *this;
 }
 
 
@@ -116,11 +156,10 @@ BinarySignal& BinarySignal::inversionSignal() {
 }
 
 size_t BinarySignal:: getTotalDuration() const{
-    size_t totalDur = 0;
-    for(size_t i = 0; i < size; ++i){
-        totalDur += signal[i].getDuration();
-    }
-    return totalDur;
+    return std::accumulate(signal, signal + size, std::size_t(0),
+        [](std::size_t total, const SignalState& state) {
+            return total + state.getDuration();
+        });
 }
 
 std::pair<size_t, size_t> BinarySignal:: findIndexAtTime(size_t time) const{
@@ -128,7 +167,7 @@ std::pair<size_t, size_t> BinarySignal:: findIndexAtTime(size_t time) const{
     size_t currtime = 0;
     for(size_t i = 0; i < size; i++){
         size_t stateDur = signal[i].getDuration();
-        if(time < currtime + stateDur) {
+        if(time <= currtime + stateDur) {
             return std::make_pair(currtime, i);
         }
         currtime += stateDur;
@@ -136,24 +175,7 @@ std::pair<size_t, size_t> BinarySignal:: findIndexAtTime(size_t time) const{
     throw std::out_of_range("Time is biger than signal duration");
 }
 
-BinarySignal & BinarySignal:: mergeStates(){
-     if (size <= 1) { return *this;}
 
-    BinarySignal merged;
-    merged.push_back(signal[0]);
-    
-    for (size_t i = 1; i < size; ++i) {
-        if (signal[i].getLevel() == merged.back().getLevel()) {
-            size_t newDuration = merged.back().getDuration() + signal[i].getDuration();
-            merged.back().setDuration(newDuration);
-        } else {
-            merged.push_back(signal[i]);
-        }
-    }
-    
-    *this = std::move(merged);
-    return *this;
-}
 
 
 void BinarySignal:: insertSignal(size_t time, const BinarySignal& other){
@@ -199,14 +221,14 @@ void BinarySignal:: insertSignal(size_t time, const BinarySignal& other){
 }
 
 
-void BinarySignal:: deleteSignal(size_t startTime, size_t delDur){
+void BinarySignal::deleteSignal(size_t startTime, size_t delDur) {
     if (delDur == 0 || size == 0) return;
 
     size_t totalDur = getTotalDuration();
-    if(startTime >= totalDur) throw std::out_of_range("Start time is biger that signal duration");
+    if (startTime >= totalDur) throw std::out_of_range("Start time is bigger than signal duration");
     
     size_t endTime = startTime + delDur;
-    if (endTime >= totalDur){
+    if (endTime >= totalDur) {
         endTime = totalDur;
         delDur = totalDur - startTime;
     }
@@ -215,17 +237,19 @@ void BinarySignal:: deleteSignal(size_t startTime, size_t delDur){
     auto [endStateTime, endInd] = findIndexAtTime(endTime);
 
     BinarySignal newSignal;
+    
     for (size_t i = 0; i < startInd; ++i) {
         newSignal.push_back(signal[i]);
     }
 
-    size_t offset_left =startTime - startStateTime;
+    size_t offset_left = startTime - startStateTime;
     size_t offset_right = signal[endInd].getDuration() - (endTime - endStateTime);
-   
-    if (offset_left > 0){
+
+    if (offset_left > 0) {
         newSignal.push_back(SignalState(signal[startInd].getLevel(), offset_left));
     }
-    if (offset_right > 0 && endInd != startInd){
+
+    if (offset_right > 0) {
         newSignal.push_back(SignalState(signal[endInd].getLevel(), offset_right));
     }
 
@@ -233,8 +257,7 @@ void BinarySignal:: deleteSignal(size_t startTime, size_t delDur){
         newSignal.push_back(signal[i]);
     }
 
-    *this = static_cast<BinarySignal&&>(newSignal);
-    
+    *this = std::move(newSignal);
     mergeStates();
 }
 
@@ -259,24 +282,29 @@ void BinarySignal:: outputSignal(std::ostream &os) const{
     }
 }
 
-void BinarySignal:: inputSignal(std::istream & is){
-    SignalState state;
-    while (is.good()){
-        state.inputState(is);
-        if (is.good()) {
-            push_back(state);
+void BinarySignal::inputSignal(std::istream & is) {
+    char stopSimbol = '.';
+    std::string inputStr;
+    while (is.good()) {
+        char c = is.get();
+        if (c == stopSimbol || c == '\n' || c == EOF) {
+            break;
+        }
+        if (c != ' ' && c != '\t') {
+            inputStr += c;
         }
     }
-    if(is.eof()){ is.clear();}
+    if (!inputStr.empty()) {
+        *this = BinarySignal(inputStr);
+    }
 }
 
 void BinarySignal:: expander(std::size_t new_capacity){
-    if(new_capacity <= capacity) return;
+    if(new_capacity <= capacity && capacity != 0) return;
+    if (new_capacity == 0) new_capacity = 1;
 
     SignalState *new_signal = new SignalState[new_capacity];
-    for(std::size_t i = 0; i < size; i++){
-        new_signal[i] = signal[i];
-    }
+    std::move(signal, signal + size, new_signal);
     delete[] signal;
     signal = new_signal;
     capacity = new_capacity;

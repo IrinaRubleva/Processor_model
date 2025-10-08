@@ -116,8 +116,14 @@ std::ostream& operator<<(std::ostream& os, const SignalState & state){
 }
 
 std::istream & operator>>(std::istream & is, SignalState & state){
-    state.inputState(is);
+    try{
+        state.inputState(is);
+    }catch(...){
+         is.setstate(std::ios::failbit);
+    }
     return is;
 }
 
-
+SignalState& SignalState:: operator~(){
+    return inversionState();
+}
