@@ -50,13 +50,13 @@ void SignalState:: setDuration(size_t newDur) {
     duration = newDur;
 }
 
-void SignalState:: setState(bool newLevel, size_t newDuration) {
+void SignalState::setState(bool newLevel, size_t newDuration) {
     validDuration(newDuration);
     level = newLevel;
     duration = newDuration;
 }
 
-void SignalState:: inputState(std::istream & is){
+void SignalState::inputState(std::istream & is){
     char lvl;
     size_t dur;
     //std::cout << "Enter level of signal (0 or 1):" << std::flush;

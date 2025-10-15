@@ -2,3 +2,5 @@ build/*
 ../*
 Doxyfile
 docs/*
+../2ex/*
+.vscode/
