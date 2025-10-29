@@ -1,0 +1,5 @@
+build/*
+
+Doxyfile
+docs/*
+.vscode/
