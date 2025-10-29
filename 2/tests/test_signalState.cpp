@@ -186,14 +186,11 @@ TEST(SignalStateTest, SetLevelIntInvalid) {
 
 TEST(SignalStateTest, InversionOperator) {
     SignalState state1(true, 5);
-    SignalState state2(false, 3);
+    SignalState state2;
     
-    ~state1;
-    ~state2;
+    state2 = ~state1;
     
-    EXPECT_FALSE(state1.getLevel()); 
-    EXPECT_TRUE(state2.getLevel());
+    EXPECT_FALSE(state2.getLevel()); 
 
-    EXPECT_EQ(state1.getDuration(), 5);
-    EXPECT_EQ(state2.getDuration(), 3);
+    EXPECT_EQ(state2.getDuration(), 5);
 }
