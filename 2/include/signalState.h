@@ -100,7 +100,7 @@ public:
     /**
      * @brief префиксный оператор для инверсии уровня сигнала
      */
-    SignalState & operator~ ();
+    SignalState operator~() const;
 
 private: 
     bool level;

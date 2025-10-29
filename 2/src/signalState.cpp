@@ -75,7 +75,7 @@ void SignalState::inputState(std::istream & is){
         throw std::invalid_argument("Duration must be natural number!");
     }
 
-     level = (lvl == '1'); 
+    level = (lvl == '1'); 
     duration = dur;
 }
 
@@ -83,7 +83,7 @@ void SignalState:: outputState(std::ostream &os) const {
     os << "SignalState: [level=" << (level ? "true" : "false") << "; duration=" << duration << "]\n";
 }
 
-SignalState & SignalState:: inversionState(){
+SignalState &SignalState:: inversionState(){
     level = !level;
     return *this;
 }
@@ -124,6 +124,6 @@ std::istream & operator>>(std::istream & is, SignalState & state){
     return is;
 }
 
-SignalState& SignalState:: operator~(){
-    return inversionState();
+SignalState SignalState::operator~() const {
+    return SignalState(!level, this->duration);
 }

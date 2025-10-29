@@ -24,6 +24,9 @@ target_include_directories(binarySignal PUBLIC include)
 
 add_subdirectory(tests)
 
+add_executable(main_app src/main.cpp)
+target_link_libraries(main_app binarySignal signalState)
+target_include_directories(main_app PUBLIC include)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     find_program(GCOVR gcovr)

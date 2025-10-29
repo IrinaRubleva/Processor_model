@@ -338,7 +338,7 @@ void BinarySignal::outputSignal(std::ostream &os) const
 
 void BinarySignal::inputSignal(std::istream &is)
 {
-    char stopSimbol = '.';
+    const static char stopSimbol = '.';
     std::string inputStr;
     while (is.good())
     {
@@ -403,6 +403,11 @@ std::ostream &operator<<(std::ostream &os, const BinarySignal &signal)
 
 std::istream &operator>>(std::istream &is, BinarySignal &signal)
 {
-    signal.inputSignal(is);
+    try {
+        signal.inputSignal(is);
+    }
+    catch (const std::exception& e) {
+        is.setstate(std::ios::failbit);
+    }
     return is;
 }
