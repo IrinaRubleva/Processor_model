@@ -1,0 +1,6 @@
+model/build/
+program.txt
+
+.vscode/c_cpp_properties.json
+.vscode/settings.json
+model/include/vector/CMakeLists.txt
