@@ -1,0 +1,5 @@
+DB b, 1
+DD c, 2
+MOV R1, 42
+MOV R2, 100
+ADD R1, R2

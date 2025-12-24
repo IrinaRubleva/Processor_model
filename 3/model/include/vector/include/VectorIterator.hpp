@@ -11,7 +11,7 @@ public:
     typedef T value_type;
     typedef std::conditional_t<is_const, const T, T>* pointer;
     typedef std::conditional_t<is_const, const T, T>& reference;
-    typedef std::random_access_iterator_tag iterator_category;
+    typedef std::contiguous_iterator_tag iterator_category;
     
     VectorIterator() noexcept: ptr_(nullptr) {}
     explicit VectorIterator(pointer p) noexcept : ptr_(p) {}
@@ -65,5 +65,5 @@ private:
 };
 
 
-static_assert(std::random_access_iterator<VectorIterator<int, false>>);
-static_assert(std::random_access_iterator<VectorIterator<int, true>>);
+static_assert(std::contiguous_iterator<VectorIterator<int, false>>);
+static_assert(std::contiguous_iterator<VectorIterator<int, true>>);

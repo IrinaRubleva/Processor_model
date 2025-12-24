@@ -1,60 +1,75 @@
-#include "../device/device.hpp"
+#pragma once
+#include "device.hpp"
 
-class SingleByteMemoryDevice : public Device, public WriteableDevice {
+
+#include <iostream>
+typedef uint64_t port_size;
+
+class SingleByteMemoryDevice: public ReadableDevice, public WriteableDevice{
 public:
-    explicit SingleByteMemoryDevice(uint8_t init = 0);
-    uint8_t read(uint16_t port) override;  
-    void write(uint16_t port, uint8_t value) override;
+    explicit SingleByteMemoryDevice(uint8_t init = 0): data(init){}
+    uint8_t read(port_size port) const override;
+    void write(port_size port, uint8_t value) override;
 private:
     uint8_t data;
 };
 
 
-class SingleByteMemoryDevice_ReadOnly : public Device {
+class SingleByteMemoryDevice_ReadOnly :public ReadableDevice {
 public:
-    explicit SingleByteMemoryDevice_ReadOnly(uint8_t init = 0);
-    uint8_t read(uint16_t port) override;
+    explicit SingleByteMemoryDevice_ReadOnly(uint8_t init = 0): data(init){}
+    uint8_t read(port_size port) const override;
 private:
     uint8_t data;
 };
 
 
-class MultiByteMemoryDevice : public Device, public WriteableDevice {
+class MultiByteMemoryDevice : public WriteableDevice, public ReadableDevice {
 public:
-    explicit MultiByteMemoryDevice(size_t size);
-    uint8_t read(uint16_t port) override;
-    void write(uint16_t port, uint8_t value) override;
+    MultiByteMemoryDevice(size_t size) 
+    : size(size), buffer(std::make_unique<uint8_t[]>(size)) {}
+    
+    size_t getSize() const {return size;}
+    uint8_t read(port_size port) const override;
+    void write(port_size port, uint8_t value) override;
+
 private:
     std::unique_ptr<uint8_t[]> buffer;
     size_t size;
 };
 
 
-class MultiByteMemoryDevice_ReadOnly : public Device {
+class MultiByteMemoryDevice_ReadOnly :public ReadableDevice{
 public:
-    explicit MultiByteMemoryDevice_ReadOnly(size_t size);
-    uint8_t read(uint16_t port) override;
+    explicit MultiByteMemoryDevice_ReadOnly(size_t size)
+    : size(size), buffer(std::make_unique<uint8_t[]>(size)) {}
+    
+    uint8_t read(port_size port) const override;
 private:
     std::unique_ptr<uint8_t[]> buffer;
     size_t size;
 };
 
 
-class RegisterBlockDevice : public Device, public WriteableDevice {
+class RegisterBlockDevice :public WriteableDevice, public ReadableDevice {
 public:
-    RegisterBlockDevice(size_t count);
-    uint8_t read(uint16_t port) override;
-    void write(uint16_t port, uint8_t value) override;
+    RegisterBlockDevice(size_t count)
+    : count(count), regs(std::make_unique<uint8_t[]>(count)) {}
+
+    uint8_t read(port_size port) const override;
+    void write(port_size port, uint8_t value) override;
 private:
     std::unique_ptr<uint8_t[]> regs;
     size_t count;
 };
 
 
-class RegisterBlockDevice_ReadOnly : public Device {
+class RegisterBlockDevice_ReadOnly : public ReadableDevice{
 public:
-    RegisterBlockDevice_ReadOnly(size_t count);
-    uint8_t read(uint16_t port) override;
+    RegisterBlockDevice_ReadOnly(size_t count)
+    : count(count), regs(std::make_unique<uint8_t[]>(count)) {}
+
+    uint8_t read(port_size port) const override;
 private:
     std::unique_ptr<uint8_t[]> regs;
     size_t count;

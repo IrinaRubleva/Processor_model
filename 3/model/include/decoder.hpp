@@ -1,24 +1,33 @@
 #pragma once
-#include "command.hpp"
-#include "programMemory.hpp"
 #include <memory>
+#include <unordered_map>
+#include "commands/command.hpp"
 
-//определить тип комманды
-class Decoder{
+#include <iostream>
+
+//class Command;
+class ProgramMemory;
+//class ConcreteCommandFactory;
+
+class Decoder
+{
 public:
-    std::unique_ptr<Command> decode(uint64_t& pc, ProgramMemory& mem);
+    Decoder() {
+        factory = std::make_unique<ConcreteCommandFactory>();
+        std::cout << "[Decoder] Default constructor - factory created at " << factory.get() << std::endl;
+    }
+    Decoder(std::unique_ptr<CommandFactory> factory) : factory(std::move(factory)) {}
+    std::unique_ptr<Command> decode(uint64_t &pc, ProgramMemory &mem);
+    CommandFactory& getFactory() { return *factory;}
+    // ConcreteCommandFactory* getFactory() { 
+    //     return dynamic_cast<ConcreteCommandFactory*>(factory.get()); 
+    // }
+    
+    // const ConcreteCommandFactory* getFactory() const { 
+    //     return dynamic_cast<const ConcreteCommandFactory*>(factory.get()); 
+    // }
+
 private:
-    CommandFactory* factory;
-}; 
+    std::unique_ptr<CommandFactory> factory;
+};
 
-
-std::unique_ptr<Command> Decoder::decode(uint64_t& pc, ProgramMemory& mem) {
-    uint8_t opcode = mem.fetchByte(pc++);
-    auto iter = instructionTable.find(opcode);
-    if (iter == instructionTable.end())
-        throw std::runtime_error("Unknown opcode");
-
-    OperationType op = iter->second;
-
-    return factory->create(op, pc, mem);
-}

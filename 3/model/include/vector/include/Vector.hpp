@@ -138,7 +138,7 @@ public:
             end_ = begin_;
             cap_ = begin_ + n;
             for (size_type i = 0; i < n; ++i)
-                construct_at(end_++, std::move(o[i]));
+                std::construct_at(end_++, std::move(o[i]));
         }
     }
 
@@ -211,8 +211,8 @@ public:
         end_ = begin_;
         cap_ = begin_ + size;
 
-        for (const auto &elem : il)
-            construct_at(end_++, elem);
+        for (auto it = il.begin(); it != il.end(); ++it)
+            construct_at(end_++, std::move(*it));
     }
 
     /*!
@@ -255,6 +255,13 @@ public:
     }
 
     //-------------------------------------------------Element access----------------------------------
+    /*!
+     * @brief Метод, присваивающий значения контейнеру
+     * @param count - новый размер контейнера 
+     * @param value - значение для инициализации элементов контейнера с помощью 
+     * @param first,last — пара итераторов, определяющих исходный диапазон копируемых элементов. 
+     * @param ilist — std::initializer_list для копирования значений из
+     */
     void assign(size_type count, const T &value)
     {
         if (count > capacity())
@@ -333,15 +340,24 @@ public:
         assign(ilist.begin(), ilist.end());
     }
 
+
+    /*!
+    *@brief Геттер аллокатора
+    */
     allocator_type get_allocator() const noexcept { return allocator; }
 
+    /*!
+    *@brief Доступ к указанному элементу с проверкой границ
+    */
     reference at(size_type pos)
     {
         if (pos >= size())
             throw std::out_of_range("Vector::at");
         return begin_[pos];
     }
-
+    /*!
+    *@brief Константный доступ к указанному элементу с проверкой границ
+    */
     const_reference at(size_type pos) const
     {
         if (pos >= size())
@@ -349,34 +365,49 @@ public:
         return begin_[pos];
     }
 
+     /*!
+    *@brief Доступ к указанному элементу без проверки границ
+    */
     reference operator[](size_type pos)
     {
         return begin_[pos];
     }
-
+    /*!
+    *@brief Константный доступ к указанному элементу без проверки границ
+    */
     const_reference operator[](size_type pos) const
     {
         return begin_[pos];
     }
 
+    /*!
+    *@brief Доступ к первому элементу
+    */
     reference front()
     {
         assert(size() > 0);
         return begin_[0];
     }
-
+    /*!
+    *@brief Константный доступ к первому элементу
+    */
     const_reference front() const
     {
         assert(size() > 0);
         return begin_[0];
     }
 
+    /*!
+    *@brief Доступ к последнему элементу
+    */
     reference back()
     {
         assert(size() > 0);
         return *(end_ - 1);
     }
-
+    /*!
+    *@brief Константный доступ к последнему элементу
+    */
     const_reference back() const
     {
         assert(size() > 0);
@@ -384,29 +415,52 @@ public:
     }
 
     // ---------------------------------------------------Iterators------------------------------------------
-
+    /*!
+    *@brief Возвращает итератор в начало
+    */
     iterator begin() noexcept { return iterator(begin_); }
     const_iterator begin() const noexcept { return const_iterator(begin_); }
     const_iterator cbegin() const noexcept { return const_iterator(begin_); }
-
+    /*!
+    *@brief Возвращает итератор в конец
+    */
     iterator end() noexcept { return iterator(end_); }
     const_iterator end() const noexcept { return const_iterator(end_); }
     const_iterator cend() const noexcept { return const_iterator(end_); }
-
+    /*!
+    *@brief Возвращает обратный итератор в начало
+    */
     reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
     const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
     const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
-
+    /*!
+    *@brief Возвращает обратный итератор в конец
+    */
     reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
     const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
     const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
 
     //-------------------------------------------------------Capacity----------------------------------
+   /*!
+    *@brief Возвращает количество элементов
+    */
     size_type size() const { return end_ - begin_; }
+    /*!
+    *@brief Проверяет, пуст ли контейнер
+    */
     bool empty() const { return size() == 0; }
+    /*!
+    *@brief Возвращает максимально возможное количество элементов
+    */
     size_type max_size() const { return std::allocator_traits<Alloc>::max_size(allocator); }
-    size_type capacity() const { return cap_ - begin_; }
 
+    /*!
+    *@brief Возвращает количество элементов, которые могут храниться в выделенном на данный момент хранилище
+    */
+    size_type capacity() const { return cap_ - begin_; }
+    /*!
+    *@brief Хранилище резервов
+    */
     void reserve(size_type new_cap)
     {
         if (new_cap <= capacity())
@@ -428,7 +482,9 @@ public:
     }
 
     //------------------------------------------------------Modifiers-----------------------------------------------
-
+    /*!
+    *@brief Очищает содержимое
+    */
     void clear()
     {
         destroy_range(begin_, end_);
@@ -539,7 +595,11 @@ public:
     {
         return insert(p, il.begin(), il.end());
     }
-
+    /*!
+    *@brief Конструирует элемент на месте
+    *@param p - итератор, перед которым будет создан новый элемент
+    *@param args - аргументы для пересылки конструктору элемента
+    */
     template <typename... Args>
     iterator emplace(const_iterator p, Args &&...args)
         requires std::constructible_from<T, Args...>
@@ -555,7 +615,9 @@ public:
 
         return iterator(pos_ptr);
     }
-
+    /*!
+    *@brief Стирает элементы
+    */
     iterator erase(const_iterator pos)
     {
         size_type idx = pos.ptr_ - begin_;
@@ -566,7 +628,9 @@ public:
 
         return iterator(begin_ + idx);
     }
-
+    /*!
+    *@brief Стирает элементы
+    */
     iterator erase(const_iterator first, const_iterator last)
     {
         size_type idx = first.ptr_ - begin_;
@@ -580,7 +644,9 @@ public:
 
         return iterator(begin_ + idx);
     }
-
+    /*!
+    *@brief Добавляет элемент в конец
+    */
     void push_back(const T &value)
     {
         if (size() == capacity())
@@ -591,7 +657,9 @@ public:
         construct_at(end_, value);
         ++end_;
     }
-
+    /*!
+    *@brief Добавляет элемент в конец
+    */
     void push_back(T &&value)
     {
         if (size() == capacity())
@@ -601,7 +669,9 @@ public:
         construct_at(end_, std::move(value));
         ++end_;
     }
-
+    /*!
+    *@brief Удаляет последний элемент
+    */
     void pop_back()
     {
         if (end_ == begin_)
@@ -610,30 +680,12 @@ public:
         destroy_at(end_);
     }
 
-    void resize(size_type count)
-    {
-        size_type cur = size();
-        if (count < cur)
-        {
-            while (size() > count)
-            {
-                --end_;
-                destroy_at(end_);
-            }
-        }
-        else if (count > cur)
-        {
-            if (count > capacity())
-                reserve(count > capacity() * 2 ? count : capacity() * 2);
-
-            while (size() < count)
-            {
-                construct_at(end_, T{});
-                ++end_;
-            }
-        }
-    }
-
+    /*!
+    *@brief  Изменяет количество хранимых элементов
+    *@param count — новый размер контейнера
+    *@param value - значение, чтобы инициализировать новые элементы с помощью
+    *@exception 
+    */
     void resize(size_type count, const value_type &value)
     {
         size_type cur = size();
@@ -656,6 +708,15 @@ public:
                 ++end_;
             }
         }
+    }
+
+    /*!
+    *@brief Изменяет количество хранимых элементов
+    *@param count — новый размер контейнера
+    */
+    void resize(size_type count)
+    {
+        resize(count, T{});
     }
 
 private:
@@ -703,17 +764,6 @@ private:
             construct_at(p, std::move(*(p - count)));
             destroy_at(p - count);
         }
-    }
-
-    void shift_left(T *pos, size_type count)
-    {
-        for (T *p = pos; p + count < end_; ++p)
-        {
-            destroy_at(p);
-            construct_at(p, std::move(*(p + count)));
-            destroy_at(p + count);
-        }
-        end_ -= count;
     }
 
     void swap_state(Vector &other) noexcept

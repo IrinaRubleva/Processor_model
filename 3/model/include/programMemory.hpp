@@ -1,16 +1,83 @@
 #pragma once
 #include <vector>
-#include "command.hpp"
 #include <memory>
 #include "device/memoryDevice.hpp"
 
-class ProgramMemory: public MultiByteMemoryDevice{
-private:
-    std::vector<std::shared_ptr<Command>> program;
-public:  
-    void loadProgramm(std::vector<std::shared_ptr<Command>> p);
-    std::shared_ptr<Command> fetch(size_t){
-        
+#include <iomanip>
+#include <iostream>
+
+class ProgramMemory : public MultiByteMemoryDevice
+{
+public:
+    explicit ProgramMemory(size_t size) : MultiByteMemoryDevice(size)
+    {
+        std::cout << "[ProgramMemory] Created with size=" << size << std::endl;
     }
-    size_t size() {return program.size();};
+
+    ~ProgramMemory() override = default;
+
+    ProgramMemory(const ProgramMemory &) = delete;
+    ProgramMemory &operator=(const ProgramMemory &) = delete;
+
+    ProgramMemory(ProgramMemory &&other) noexcept = default;
+    ProgramMemory &operator=(ProgramMemory &&other) noexcept = default;
+
+    void clear()
+    {
+        for (size_t i = 0; i < getSize(); ++i)
+        {
+            write(i, 0);
+        }
+    }
+    void loadProgram(const std::vector<uint8_t> &bytes)
+    {
+        clear();
+        for (size_t i = 0; i < bytes.size(); ++i)
+        {
+            write(i, bytes[i]);
+        }
+    }
+
+    void printState(size_t bytesPerLine = 16, size_t maxBytes = 0) const
+    {
+        if (maxBytes == 0 || maxBytes > getSize()) {
+            maxBytes = getSize();
+        }
+        
+        std::cout << "\n=== Состояние программной памяти (" << maxBytes << " байт) ===" << std::endl;
+        
+        for (size_t addr = 0; addr < maxBytes; addr += bytesPerLine) {
+            // Вывод адреса (десятичный)
+            std::cout << std::dec << std::setw(4) << std::setfill(' ') 
+                      << addr << ": ";
+            
+            // Вывод байтов в десятичной системе
+            for (size_t i = 0; i < bytesPerLine; ++i) {
+                size_t currentAddr = addr + i;
+                if (currentAddr < maxBytes) {
+                    std::cout << std::dec << std::setw(3) << std::setfill(' ') 
+                              << static_cast<int>(read(currentAddr)) << " ";
+                } else {
+                    std::cout << "    "; // пробелы для неполной строки
+                }
+            }
+            
+            std::cout << " | ";
+            
+            // Вывод символов ASCII (если это печатные символы)
+            for (size_t i = 0; i < bytesPerLine; ++i) {
+                size_t currentAddr = addr + i;
+                if (currentAddr < maxBytes) {
+                    uint8_t byte = read(currentAddr);
+                    if (byte >= 32 && byte <= 126) { // печатные символы
+                        std::cout << static_cast<char>(byte);
+                    } else {
+                        std::cout << ".";
+                    }
+                }
+            }
+            
+            std::cout << std::endl;
+        }
+    }
 };

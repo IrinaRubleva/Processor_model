@@ -1,6 +1,11 @@
 model/build/
-program.txt
+model/include/vector/build
+
+build/
 
 .vscode/c_cpp_properties.json
 .vscode/settings.json
 model/include/vector/CMakeLists.txt
+
+../1/.gitignore
+../2/include/signalState.h

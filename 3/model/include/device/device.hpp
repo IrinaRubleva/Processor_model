@@ -1,35 +1,32 @@
 #pragma once
 #include <cstdint>
 #include <memory>
-#include "../bus.hpp"
-#include "../operationType.hpp"
 
+typedef uint64_t port_size;
+class ControlUnit ;
 
-class Device{
-public:
-    virtual uint8_t read(uint16_t port) = 0;
-    virtual ~Device() = default;
-
-    Device() = default;
-    Device(const Device&) = delete;
-    Device& operator=(const Device&) = delete;
+struct ReadableDevice:{
+    virtual uint8_t read(port_size port) const = 0; 
+    virtual ~ReadableDevice()= default;
 };
 
-struct WriteableDevice {
-    virtual void write(uint16_t port, uint8_t value) = 0;
+struct WriteableDevice
+{
+    virtual void write(uint64_t port, uint8_t value) = 0;
     virtual ~WriteableDevice() = default;
 };
+//new WritableDevice->write(1,1);
 
-
-struct SynchronDevice {
+struct SynchronDevice
+{
     virtual uint64_t getPeriod() const = 0;
-    virtual void tick() = 0;
+    virtual void tick(ControlUnit& cu) = 0;
     virtual ~SynchronDevice() = default;
 };
 
-
-struct AsynchronDevice {
+struct AsynchronDevice
+{
     virtual bool ready() const = 0;
-    virtual void tick() = 0;
+    virtual void tick(ControlUnit & cu) = 0;
     virtual ~AsynchronDevice() = default;
 };

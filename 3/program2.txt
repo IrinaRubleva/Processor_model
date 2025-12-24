@@ -1,0 +1,13 @@
+    DW a, 0
+    DB b, 14
+    DD c, 211
+    DQ d, 101
+    MOV R1 , R2
+    MOV R2, d
+    INC R1
+    JMP start
+    INC R2
+    THRI start
+start:
+    INC R1
+    THRE start
