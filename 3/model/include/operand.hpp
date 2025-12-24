@@ -3,6 +3,15 @@
 #include <cstdint>
 #include <iostream>
 
+
+
+
+
+/*!
+*@brief Описатель операнда. Входит в структуру команда
+*/
+
+
 enum class TypeData {
     Data = 0,     ///< Непосредственное значение
     Address = 1,  ///< Адрес в шине, где хранится значение
@@ -19,7 +28,7 @@ public:
     OperandDescriptor() = default;
     OperandDescriptor(TypeData type, uint8_t size, uint64_t val): type(type), size(size), value(val) {}
     
-    uint64_t getValue() {return value;}
+    uint64_t getValue() const {return value;}
     uint8_t getSize() const { return size; }
     TypeData getType() const { return type; }
     void setValue(uint64_t val) {value = val;}
@@ -27,7 +36,7 @@ public:
     uint64_t getRawValue(Bus& bus) {
         if (type == TypeData::Data) return value;
         
-        if (type == TypeData::Register) {
+        else if (type == TypeData::Register) {
             uint64_t gprBase = bus.getDeviceAddress("GPR");
             uint64_t res = 0;
             for (uint8_t i = 0; i < size; ++i) {
@@ -36,17 +45,16 @@ public:
             return res;
         }
 
-        if (type == TypeData::Address) {
+        else if (type == TypeData::Address) {
             // РАСПАКОВКА: старшие 56 бит - offset, младшие 8 бит - dataSize
             uint64_t offset = value >> 8;     // offset в DataMemory
             uint8_t dataSize = value & 0xFF;  // размер переменной (1, 2, 4, 8)
             
             uint64_t dataMemBase = bus.getDeviceAddress("DataMemory");
             uint64_t absoluteAddr = dataMemBase + offset;
+            //std::cout << "[OperandDescriptor] DataMemory base address: " << dataMemBase << " (should be 2056)" << std::endl;
             
-            std::cout << "[OperandDescriptor::getRawValue] Address type: "
-                      << "offset=" << offset << ", dataSize=" << (int)dataSize
-                      << ", reading from addr=" << absoluteAddr << std::endl;
+            //std::cout << "[OperandDescriptor::getRawValue] Address type: " << "offset=" << offset << ", dataSize=" << (int)dataSize << ", reading from addr=" << absoluteAddr << std::endl;
             
             uint64_t res = 0;
             for (uint8_t i = 0; i < dataSize; ++i) {
@@ -54,7 +62,7 @@ public:
                 res |= (uint64_t)byte << (i * 8);
             }
             
-            std::cout << "[OperandDescriptor::getRawValue] Read value: " << res << std::endl;
+            //std::cout << "[OperandDescriptor::getRawValue] Read value: " << res << std::endl;
             return res;
         }
         
@@ -63,33 +71,34 @@ public:
     }
 
     void setRawValue(Bus& bus, uint64_t newValue) {
-        std::cout << "[OperandDescriptor::setRawValue] type=" << (int)type 
-                  << ", current value=" << value << ", newValue=" << newValue << std::endl;
+        //std::cout << "[OperandDescriptor::setRawValue] type=" << (int)type  << ", current value=" << value << ", newValue=" << newValue << std::endl;
     
         if (type == TypeData::Data) {
-            // ДЛЯ TypeData::Data просто сохраняем значение!
-            std::cout << "  TypeData::Data: updating value from " << value 
-                    << " to " << newValue << std::endl;
+            
             value = newValue;
         }
         else if (type == TypeData::Register) {
             uint64_t gprBase = bus.getDeviceAddress("GPR");
+            
+            
+            uint64_t registerIndex = value;
+            uint64_t regAddr = gprBase + registerIndex * size;
+            
+            
             for (uint8_t i = 0; i < size; ++i) {
                 uint8_t byteValue = (newValue >> (i * 8)) & 0xFF;
-                bus.write(gprBase + value * size + i, byteValue);
+                bus.write(regAddr + i, byteValue);
             }
         }
         else if (type == TypeData::Address) {
-            // РАСПАКОВКА: старшие 56 бит - offset, младшие 8 бит - dataSize
+            
             uint64_t offset = value >> 8;     // offset в DataMemory
             uint8_t dataSize = value & 0xFF;  // размер переменной (1, 2, 4, 8)
             
             uint64_t dataMemBase = bus.getDeviceAddress("DataMemory");
             uint64_t absoluteAddr = dataMemBase + offset;
             
-            std::cout << "[OperandDescriptor::setRawValue] Address type: "
-                      << "offset=" << offset << ", dataSize=" << (int)dataSize
-                      << ", writing to addr=" << absoluteAddr << std::endl;
+            
             
             for (uint8_t i = 0; i < dataSize; ++i) {
                 uint8_t byteValue = (newValue >> (i * 8)) & 0xFF;

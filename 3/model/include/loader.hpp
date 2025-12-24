@@ -5,6 +5,13 @@
 #include <fstream>
 #include <memory>
 
+
+/*!
+*@brief Загрузчик. Загружает конфиг, инициализируя сам процессор
+*/
+
+class CommandFactory;
+
 class Loader
 {
 public:

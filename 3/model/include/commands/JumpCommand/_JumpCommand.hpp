@@ -1,6 +1,11 @@
-#include "command.hpp"
-#include "../controleUnit.hpp"
+#pragma once
 
+#include "../command.hpp"
+
+
+/*!
+*@brief Описатель перехода. Результат выполнения операции помещается в первый операнд.
+*/
 class JumpCommand : public Command
 {
 protected:
@@ -12,12 +17,4 @@ public:
     void execute(ControlUnit &cu) override = 0;
     
     void compute(ControlUnit &cu) override;
-};
-
-struct JmpCommand : public JumpCommand
-{
-    JmpCommand(sizeOfOpcode opcode, const OperandDescriptor &operand) : JumpCommand(opcode, operand) {}
-    void execute(ControlUnit &cu) override {}
-
-    std::string getName() const override { return "JMP"; }
 };

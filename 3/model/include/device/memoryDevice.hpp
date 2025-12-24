@@ -2,6 +2,13 @@
 #include "device.hpp"
 
 
+
+/*!
+*@brief Устройства Мапяти. Использовать для создания новых ProgramMemory/ DataMemory
+*/
+
+
+
 #include <iostream>
 typedef uint64_t port_size;
 

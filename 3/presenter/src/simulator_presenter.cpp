@@ -11,9 +11,13 @@ SimulatorPresenter::SimulatorPresenter()
 void SimulatorPresenter::createProcessor(uint64_t busAddressSpace, size_t numRegisters) {
     try {
         processor = std::make_unique<Processor>(busAddressSpace, numRegisters);
+        std::cout << "[Presenter] Processor created successfully" << std::endl;
+        
         loader = std::make_unique<Loader>();
-        return ;
+        std::cout << "[Presenter] Loader created" << std::endl;
+        return;
     } catch (const std::exception& e) {
+        std::cerr << "[Presenter] ERROR creating processor: " << e.what() << std::endl;
         processor.reset();
         loader.reset();
         return;
@@ -63,7 +67,7 @@ bool SimulatorPresenter::loadProgram(const std::string& programPath) {
         
         return true;
     } catch (const std::exception& e) {
-        std::cout << ("Ошибка загрузки программы: %1");
+        std::cerr << "Ошибка загрузки программы: " << e.what() << std::endl;
         return false;
     }
 }
@@ -186,16 +190,3 @@ std::string SimulatorPresenter::showMemoryState() const {
     return ss.str();
 
 }
-
-// std::string SimulatorPresenter::getProcessorState() const {
-//     if (!processor) return "Processor not created";
-    
-//     std::stringstream ss;
-//     ss << "=== Processor State ===\n";
-    
-//     if (auto* cu = processor->getControlUnit()) {
-//         ss << "PC: " << cu->getPC() << "\n";
-//     }
-    
-//     return ss.str();
-// }

@@ -491,7 +491,7 @@ public:
         end_ = begin_;
     }
 
-    /*!
+     /*!
      * @brief Вставка в список копии переданного значения
      * @param p Итератор, перед которым будет вставлен новый элемент
      * @param t Значения для вставки
@@ -500,14 +500,7 @@ public:
     iterator insert(const_iterator p, const T &t)
         requires std::copy_constructible<T>
     {
-        size_type pos_index = p - cbegin();
-        if (size() == capacity())
-            reserve(capacity() == 0 ? 1 : capacity() * 2);
-
-        T *pos_ptr = begin_ + pos_index;
-        shift_right(pos_ptr, 1);
-        construct_at(pos_ptr, t);
-        return iterator(pos_ptr);
+        return insert_helper(p, 1, [&t](size_type) -> const T& { return t; });
     }
 
     /*!
@@ -516,18 +509,10 @@ public:
      * @param t Значения для вставки
      * @returns Итератор на вставленный элемент
      */
-    template <typename... Args>
     iterator insert(const_iterator p, T &&t)
         requires std::move_constructible<T>
     {
-        size_type pos_index = p - cbegin();
-        if (size() == capacity())
-            reserve(capacity() == 0 ? 1 : capacity() * 2);
-
-        T *pos_ptr = begin_ + pos_index;
-        shift_right(pos_ptr, 1);
-        construct_at(pos_ptr, std::move(t));
-        return iterator(pos_ptr);
+        return insert_helper(p, 1, [&t](size_type) -> T&& { return std::move(t); });
     }
 
     /*!
@@ -535,24 +520,15 @@ public:
      * @param p Итератор, перед которым будут вставлены новые элементы
      * @param n Количество значений для вставки
      * @param t Значения для вставки
-     * @returns Итератор на последний вставленный элемент
+     * @returns Итератор на первый вставленный элемент
      */
     iterator insert(const_iterator p, size_type n, const T &t)
         requires std::copy_constructible<T>
     {
         if (n == 0)
             return iterator(begin_ + (p - cbegin()));
-
-        size_type pos_index = p - cbegin();
-        if (size() + n > capacity())
-            reserve(std::max(capacity() * 2, size() + n));
-
-        T *pos_ptr = begin_ + pos_index;
-        shift_right(pos_ptr, n);
-        for (size_type i = 0; i < n; ++i)
-            construct_at(pos_ptr + i, t);
-
-        return iterator(pos_ptr);
+        
+        return insert_helper(p, n, [&t](size_type) -> const T& { return t; });
     }
 
     /*!
@@ -560,41 +536,45 @@ public:
      * @param p Итератор, перед которым будут вставлены новые элементы
      * @param i Начало диапазона
      * @param j Конец диапазона
-     * @returns Итератор на последний вставленный элемент
+     * @returns Итератор на первый вставленный элемент
      */
     template <std::input_iterator It>
     iterator insert(const_iterator p, It first, It last)
-        requires std::copy_constructible<T>
+        requires std::constructible_from<T, typename std::iterator_traits<It>::reference>
     {
         size_type n = std::distance(first, last);
         if (n == 0)
             return iterator(begin_ + (p - cbegin()));
-
-        size_type pos_index = p - cbegin();
-        if (size() + n > capacity())
-            reserve(std::max(capacity() * 2, size() + n));
-
-        T *pos_ptr = begin_ + pos_index;
-        shift_right(pos_ptr, n);
-
-        T *cur = pos_ptr;
-        for (It it = first; it != last; ++it, ++cur)
-            construct_at(cur, *it);
-
-        return iterator(pos_ptr);
+        
+        return insert_helper(p, n, [first, n]() mutable -> typename std::iterator_traits<It>::reference {
+            auto &ref = *first;
+            ++first;
+            return ref;
+        });
     }
 
     /*!
      * @brief Вставка в список элементов из списка инициализации
      * @param p Итератор, перед которым будут вставлены новые элементы
      * @param il Список инициализации для вставки
-     * @returns Итератор на последний вставленный элемент
+     * @returns Итератор на первый вставленный элемент
      */
     iterator insert(const_iterator p, std::initializer_list<T> il)
         requires std::move_constructible<T>
     {
-        return insert(p, il.begin(), il.end());
+        size_type n = il.size();
+        if (n == 0)
+            return iterator(begin_ + (p - cbegin()));
+        
+        return insert_helper(p, n, [it = il.begin()]() mutable -> T&& {
+            auto &ref = *it;
+            ++it;
+            return std::move(ref);
+        });
     }
+
+
+
     /*!
     *@brief Конструирует элемент на месте
     *@param p - итератор, перед которым будет создан новый элемент
@@ -755,15 +735,27 @@ private:
         }
     }
 
-    void shift_right(T *pos, size_type count)
+    template <typename F>
+    iterator insert_helper(const_iterator pos, size_type n, F &&make_value)
     {
-        T *end_pos_ = end_;
-        end_ += count;
-        for (T *p = end_ - 1; p >= pos + count; --p)
+        size_type pos_index = pos - cbegin();
+        size_type old_size = size();
+        
+        if (old_size + n > capacity())
+            reserve(std::max(capacity() * 2, old_size + n));
+        
+        for (size_type i = 0; i < n; ++i)
         {
-            construct_at(p, std::move(*(p - count)));
-            destroy_at(p - count);
+            construct_at(end_ + i, make_value(i));
         }
+        end_ += n;
+        
+        if (pos_index != old_size)
+        {
+            std::rotate(begin_ + pos_index, begin_ + old_size, end_);
+        }
+        
+        return iterator(begin_ + pos_index);
     }
 
     void swap_state(Vector &other) noexcept

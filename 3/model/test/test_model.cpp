@@ -1,32 +1,17 @@
 #include <gtest/gtest.h>
-#include "../include/processor.hpp"
-#include "../include/assembler.hpp"
-#include "../include/loader.hpp"
+#include <memory>
+#include <vector>
+#include <cstdint>
 
+class Bus;
+class ControlUnit;
+class Processor;
+class Decoder;
+class Command;
+class Operand;
+class ProgramMemory;
 
-TEST(Test, BasicTest){
-    Processor cpu(4096, 16);
-   
-    Loader loader;
-    loader.loadConfig("../../config.json", cpu);
-    
-    std::string file = readFileToString("../../program2.txt");
-
-    Decoder& decoder = cpu.getControlUnit()->getRefDecoder();
-
-    
-    auto& factory = decoder.getFactory();
-    
-    auto prog = Assembler::assemble(file, decoder);
-
-    cpu.loadProgram(prog.programBytes);
-  
-    cpu.run();
+int main(int argc, char** argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
-
-
-TEST(Command, BinaryCommand){
-    OperandDescriptor op1, op2;
-    
-}
-

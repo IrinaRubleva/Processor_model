@@ -3,6 +3,10 @@
 #include "vector/include/Vector.hpp"
 
 
+/*!
+*@brief Регистры общего назначения. Реализованны на шаблонном классе вектора, с аллокатором и категорией итератора 
+*/
+
 
 class GeneralRegisters{
     Vector<uint32_t> vec{};

@@ -1,0 +1,139 @@
+{
+    "addressSpace": 4096,
+    "numRegisters": 16,
+    "controleUnitPeriod": 2,
+    "entryPoint": 0,
+    "devices": [
+        {
+            "name": "ProgramMemory",
+            "type": "multi_memory",
+            "base": 0,
+            "size": 2048,
+            "block": 1
+        },
+        {
+            "name": "DataMemory",
+            "type": "multi_memory",
+            "base": 2056,
+            "size": 256
+        },
+        {
+            "name": "ALU",
+            "type": "alu_async",
+            "base": 2320,
+            "size": 32,
+            "period": 1
+        },
+        
+        {
+            "name": "GPR",
+            "type": "multi_memory",
+            "base": 2328,
+            "size": 256
+        }
+    ],
+    "opCode": [
+        {
+            "opcode": 101,
+            "name": "INC",
+            "type": "unary",
+            "class": "IncCommand"
+        },
+        {
+            "opcode": 2,
+            "name": "DEC",
+            "type": "unary",
+            "class": "DecCommand"
+        },
+        {
+            "opcode": 3,
+            "name": "NEG",
+            "type": "unary",
+            "class": "NegCommand"
+        },
+        {
+            "opcode": 4,
+            "name": "NOT",
+            "type": "unary",
+            "class": "NotCommand"
+        },
+        {
+            "opcode": 10,
+            "name": "ADD",
+            "type": "binary",
+            "class": "AddCommand"
+        },
+        {
+            "opcode": 11,
+            "name": "SUB",
+            "type": "binary",
+            "class": "SubCommand"
+        },
+        {
+            "opcode": 12,
+            "name": "MUL",
+            "type": "binary",
+            "class": "MulCommand"
+        },
+        {
+            "opcode": 13,
+            "name": "DIV",
+            "type": "binary",
+            "class": "DivCommand"
+        },
+        {
+            "opcode": 14,
+            "name": "CMP",
+            "type": "binary",
+            "class": "CmpCommand"
+        },
+        {
+            "opcode": 15,
+            "name": "MOV",
+            "type": "binary",
+            "class": "MovCommand"
+        },
+        {
+            "opcode": 21,
+            "name": "JMP",
+            "type": "jump",
+            "class": "JmpCommand"
+        },
+        {
+            "opcode": 30,
+            "name": "DB",
+            "type": "dataDeclaraid",
+            "class": "DbCommand"
+        },
+        {
+            "opcode": 31,
+            "name": "DD",
+            "type": "dataDeclaraid",
+            "class": "DdCommand"
+        },
+        {
+            "opcode": 32,
+            "name": "DQ",
+            "type": "dataDeclaraid",
+            "class": "DqCommand"
+        },
+        {
+            "opcode": 33,
+            "name": "DW",
+            "type": "dataDeclaraid",
+            "class": "DwCommand"
+        },
+        {
+            "opcode": 40,
+            "name": "THRI",
+            "type": "threadInit",
+            "class": "ThreadInitCommand"
+        },
+        {
+            "opcode": 41,
+            "name": "THRE",
+            "type": "threadEnd",
+            "class": "ThreadEndCommand"
+        }
+    ]
+}

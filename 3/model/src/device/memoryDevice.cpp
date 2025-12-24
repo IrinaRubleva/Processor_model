@@ -55,3 +55,11 @@ uint8_t RegisterBlockDevice_ReadOnly::read(port_size port) const{
     }
     return 0xFF;
 }
+
+
+uint8_t RegisterBlockDevice::read(port_size port) const {
+    if (port < count) {
+        return regs[port];
+    }
+    return 0xFF;
+}

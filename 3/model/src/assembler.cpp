@@ -22,8 +22,6 @@ std::string readFileToString(const std::string &filename)
     return buffer.str();
 }
 
-
-
 static bool isRegister(const std::string &s)
 {
     return s.size() >= 2 && s[0] == 'R' && std::isdigit(s[1]);
@@ -52,8 +50,6 @@ static std::string trim(const std::string &s)
     return s.substr(b, e - b + 1);
 }
 
-
-
 Assembler Assembler::assemble(const std::string &text, Decoder &decoder)
 {
     Assembler out;
@@ -63,27 +59,20 @@ Assembler Assembler::assemble(const std::string &text, Decoder &decoder)
     uint64_t pc = 0;         
     uint64_t dataOffset = 0; 
 
-    
     std::map<std::string, uint64_t> codeLabels;    
     std::map<std::string, uint64_t> dataVariables; 
-    std::map<std::string, uint8_t> dataSizes;      
+    std::map<std::string, uint8_t> dataSizes;   
+    
+    uint64_t ThrCount = 1;
 
- 
-    auto getOperandSize = [&](const std::string &s) -> uint8_t {
-        if (isRegister(s)) return 4;          
-        if (isNumber(s)) return 4;            
-        if (dataVariables.count(s)) return 8; 
-        if (codeLabels.count(s)) return 8;    
-        return 8;                             
-    };
-
+    
     while (std::getline(ss, line))
     {
         line = trim(line);
         if (line.empty())
             continue;
 
-        // label:
+        // Обработка меток (label:)
         if (line.back() == ':')
         {
             std::string label = trim(line.substr(0, line.size() - 1));
@@ -114,49 +103,55 @@ Assembler Assembler::assemble(const std::string &text, Decoder &decoder)
                     dataSizes[varName] = size;
 
                     dataOffset += size;
-                    pc += 1 + 1 + 10 + (2 + size);
+                    pc += 1 + 1 + 10 + (2 + size); // opcode + count + address operand + data operand
                 }
                 continue;
             }
 
-            pc += 2;
-            std::string a1, a2;
-            ls >> a1 >> a2;
-
-            if (!a1.empty())
-            {
-                // Первый операнд
-                uint8_t size1 = getOperandSize(a1);
-                pc += 1 + 1 + size1;  // type(1) + size(1) + value(size1)
-                
-                if (!a2.empty())
-                {
-                    // Второй операнд
-                    uint8_t size2 = getOperandSize(a2);
-                    pc += 1 + 1 + size2;  // type(1) + size(1) + value(size2)
+            // Подсчитываем размер команды
+            pc += 2; // opcode + operand_count
+            
+            // Читаем оставшиеся токены для подсчета операндов
+            std::vector<std::string> tokens;
+            std::string token;
+            while (ls >> token) {
+                tokens.push_back(token);
+            }
+            
+            // Подсчет размера операндов
+            for (const auto& token : tokens) {
+                if (isRegister(token)) {
+                    pc += 1 + 1 + 4; 
+                } else if (isNumber(token)) {
+                    pc += 1 + 1 + 4; 
+                } else if (codeLabels.count(token) || dataVariables.count(token)) {
+                    pc += 1 + 1 + 8; 
+                } else if (!token.empty()) {
+                    // Предполагаем, что это метка или переменная, которые будут определены позже
+                    pc += 1 + 1 + 8;
                 }
             }
         }
     }
 
-
+    // ВТОРОЙ ПРОХОД: генерация байткода
     ss.clear();
     ss.seekg(0);
+    pc = 0;
 
-    auto &opcodeMap = decoder.getFactory().OpcodeMap;
-
-    std::cout << "[Assembler] Assembling with " << opcodeMap.size() << " opcodes" << std::endl;
-    std::cout << "[Assembler] Data variables found: " << dataVariables.size() << std::endl;
+    auto &opcodeToNameMap = decoder.getFactory().getOpcodeMap();
+    
+    //std::cout << "[Assembler] Assembling with " << opcodeToNameMap.size() << " opcodes" << std::endl;
+    //std::cout << "[Assembler] Data variables found: " << dataVariables.size() << std::endl;
     for (const auto &[name, addr] : dataVariables)
     {
-        std::cout << "  " << name << " -> " << addr << " (size: " << (int)dataSizes[name] << ")" << std::endl;
+        //std::cout << "  " << name << " -> " << addr << " (size: " << (int)dataSizes[name] << ")" << std::endl;
     }
-    std::cout << "[Assembler] Code labels found: " << codeLabels.size() << std::endl;
+    //std::cout << "[Assembler] Code labels found: " << codeLabels.size() << std::endl;
 
     auto emitOperand = [&](TypeData type, uint8_t size, uint64_t value)
     {
-        std::cout << "[Assembler] emitOperand: type=" << static_cast<int>(type)
-                  << ", size=" << (int)size << ", value=" << value << std::endl;
+        //std::cout << "[Assembler] emitOperand: type=" << static_cast<int>(type) << ", size=" << (int)size << ", value=" << value << std::endl;
 
         out.programBytes.push_back(static_cast<uint8_t>(type));
         out.programBytes.push_back(size);
@@ -170,6 +165,7 @@ Assembler Assembler::assemble(const std::string &text, Decoder &decoder)
         if (line.empty())
             continue;
 
+        // Пропускаем метки во втором проходе
         if (line.back() == ':')
             continue;
 
@@ -179,20 +175,27 @@ Assembler Assembler::assemble(const std::string &text, Decoder &decoder)
         std::string cmd;
         ls >> cmd;
 
-        if (!opcodeMap.count(cmd))
+        // Находим opcode по имени команды
+        auto it = std::find_if(opcodeToNameMap.begin(), opcodeToNameMap.end(),
+            [&cmd](const auto& pair) { 
+                return pair.second == cmd; 
+            });
+
+        if (it == opcodeToNameMap.end())
         {
-            std::cout << "[Assembler] ERROR: Unknown opcode '" << cmd << "'" << std::endl;
+            //std::cout << "[Assembler] ERROR: Unknown opcode '" << cmd << "'" << std::endl;
             throw std::runtime_error("Unknown opcode: " + cmd);
         }
 
-        uint8_t opcode = opcodeMap.at(cmd);
-        out.programBytes.push_back(opcode);
-
-        std::cout << "\n[Assembler] Command: " << cmd << " (opcode=" << (int)opcode << ")" << std::endl;
+        uint8_t opcode = it->first;
+        
+        //std::cout << "\n[Assembler] Command: " << cmd << " (opcode=" << (int)opcode << ")" << std::endl;
 
         // -------- DATA DECLARATION --------
         if (cmd == "DB" || cmd == "DW" || cmd == "DD" || cmd == "DQ")
         {
+            out.programBytes.push_back(opcode);
+            
             std::string name;
             uint64_t value;
             ls >> name >> value;
@@ -203,120 +206,131 @@ Assembler Assembler::assemble(const std::string &text, Decoder &decoder)
 
             out.programBytes.push_back(2);
             
-            uint64_t dataOffset = dataVariables[name];
-            emitOperand(TypeData::Address, 8, dataOffset); 
+            // Первый операнд: адрес переменной
+            uint64_t packed = (dataVariables[name] << 8) | size;
+            emitOperand(TypeData::Address, 8, packed);
+            
+            // Второй операнд: значение
             emitOperand(TypeData::Data, size, value);
 
             continue;
         }
 
-        std::string a1, a2;
-        ls >> a1 >> a2;
+        // Читаем оставшиеся токены
+        std::vector<std::string> tokens;
+        std::string token;
+        while (ls >> token) {
+            tokens.push_back(token);
+        }
 
-        std::cout << "[Assembler] Operands: a1='" << a1 << "', a2='" << a2 << "'" << std::endl;
+        //std::cout << "[Assembler] Tokens found: ";
+        for (const auto& t : tokens) //std::cout << "'" << t << "' ";
+        //std::cout << std::endl;
 
-        // -------- JUMP / THREAD --------
-        if (cmd == "JMP" || cmd == "THRI" || cmd == "THRE")
-        {
-            if (!codeLabels.count(a1))
-            {
-                std::cout << "[Assembler] ERROR: Unknown label '" << a1 << "'" << std::endl;
-                throw std::runtime_error("Unknown label: " + a1);
-            }
-
-            out.programBytes.push_back(1);                     
-            emitOperand(TypeData::Address, 8, codeLabels[a1]);
+        // -------- КОМАНДЫ БЕЗ ОПЕРАНДОВ (THRE) --------
+        if (tokens.empty() && cmd == "THRE") {
+            //std::cout << "[Assembler] No-operand command: " << cmd << std::endl;
+            out.programBytes.push_back(opcode);
+            out.programBytes.push_back(0); // 0 операндов
             continue;
         }
 
-        // -------- UNARY --------
-        if (a2.empty())
-        {
-            out.programBytes.push_back(1); // operand_count = 1
+        // -------- JUMP / THREAD INIT --------
+        if (cmd == "JMP" || cmd == "THRI") {
+            if (tokens.size() != 1) {
+                throw std::runtime_error(cmd + " requires exactly 1 operand (label)");
+            }
+            
+            std::string label = tokens[0];
+            if (!codeLabels.count(label)) {
+                throw std::runtime_error("Unknown label: " + label);
+            }
 
-            if (isRegister(a1))
-            {
-                emitOperand(TypeData::Register, 4, parseRegister(a1));
-            }
-            else if (isNumber(a1))
-            {
-                emitOperand(TypeData::Data, 4, std::stoull(a1));
-            }
-            else if (codeLabels.count(a1))
-            {
-                emitOperand(TypeData::Address, 8, codeLabels[a1]);
-            }
-            else if (dataVariables.count(a1))
-            {
-                emitOperand(TypeData::Address, 8, dataVariables[a1]);
-            }
-            else
-            {
-                std::cout << "[Assembler] ERROR: Invalid unary operand '" << a1 << "'" << std::endl;
-                throw std::runtime_error("Invalid operand: " + a1);
-            }
+            out.programBytes.push_back(opcode);
+            out.programBytes.push_back(1); // 1 операнд
+            emitOperand(TypeData::Address, 8, codeLabels[label]);
             continue;
+            if(cmd == "THRI") ++ThrCount;
+
         }
 
-        // -------- BINARY --------
-        out.programBytes.push_back(2); // operand_count = 2
+        // -------- UNARY COMMANDS (INC, DEC, NEG, NOT) --------
+        if (tokens.size() == 1) {
+            out.programBytes.push_back(opcode);
+            out.programBytes.push_back(1);
 
-        auto emitAuto = [&](const std::string &s)
-        {
-            std::cout << "[Assembler] Processing operand: '" << s << "'" << std::endl;
-
-            if (isRegister(s))
-            {
-                std::cout << "  → Type: Register" << std::endl;
-                emitOperand(TypeData::Register, 4, parseRegister(s));
+            std::string operand = tokens[0];
+            
+            if (isRegister(operand)) {
+                emitOperand(TypeData::Register, 4, parseRegister(operand));
             }
-            else if (isNumber(s))
-            {
-                std::cout << "  → Type: Data (immediate)" << std::endl;
-                emitOperand(TypeData::Data, 4, std::stoull(s));
+            else if (isNumber(operand)) {
+                emitOperand(TypeData::Data, 4, std::stoull(operand));
             }
-            else if (codeLabels.count(s))
-            {
-                std::cout << "  → Type: Address (code label at " << codeLabels[s] << ")" << std::endl;
-                emitOperand(TypeData::Address, 8, codeLabels[s]);
+            else if (codeLabels.count(operand)) {
+                emitOperand(TypeData::Address, 8, codeLabels[operand]);
             }
-            else if (dataVariables.count(s))
-            {
-                std::cout << "  → Type: Address (data variable at offset " << dataVariables[s]
-                        << ", size " << (int)dataSizes[s] << ")" << std::endl;
-                
-                // УПАКОВКА: старшие 56 бит - offset, младшие 8 бит - dataSize
-                uint64_t packed = (dataVariables[s] << 8) | dataSizes[s];
-                
-                // Адрес всегда 8 байт
+            else if (dataVariables.count(operand)) {
+                uint64_t packed = (dataVariables[operand] << 8) | dataSizes[operand];
                 emitOperand(TypeData::Address, 8, packed);
             }
-            else
-            {
-                std::cout << "[Assembler] ERROR: Unknown operand '" << s << "'" << std::endl;
-                std::cout << "  Known data variables: ";
-                for (const auto &[name, _] : dataVariables)
-                    std::cout << name << " ";
-                std::cout << std::endl;
-                std::cout << "  Known code labels: ";
-                for (const auto &[name, _] : codeLabels)
-                    std::cout << name << " ";
-                std::cout << std::endl;
-
-                throw std::runtime_error("Unknown operand: " + s);
+            else {
+                throw std::runtime_error("Invalid operand: " + operand);
             }
-        };
+            continue;
+        }
 
-        emitAuto(a1);
-        emitAuto(a2);
+        // -------- BINARY COMMANDS (ADD, SUB, MUL, DIV, MOV, CMP) --------
+        if (tokens.size() == 2) {
+            out.programBytes.push_back(opcode);
+            out.programBytes.push_back(2); // 2 операнда
+
+            auto emitAuto = [&](const std::string &s)
+            {
+                //std::cout << "[Assembler] Processing operand: '" << s << "'" << std::endl;
+
+                if (isRegister(s))
+                {
+                    //std::cout << "  → Type: Register" << std::endl;
+                    emitOperand(TypeData::Register, 4, parseRegister(s));
+                }
+                else if (isNumber(s))
+                {
+                    //std::cout << "  → Type: Data (immediate)" << std::endl;
+                    emitOperand(TypeData::Data, 4, std::stoull(s));
+                }
+                else if (codeLabels.count(s))
+                {
+                    //std::cout << "  → Type: Address (code label at " << codeLabels[s] << ")" << std::endl;
+                    emitOperand(TypeData::Address, 8, codeLabels[s]);
+                }
+                else if (dataVariables.count(s))
+                {
+                    //std::cout << "  → Type: Address (data variable at offset " << dataVariables[s] << ", size " << (int)dataSizes[s] << ")" << std::endl;
+                    
+                    uint64_t packed = (dataVariables[s] << 8) | dataSizes[s];
+                    emitOperand(TypeData::Address, 8, packed);
+                }
+                else
+                {
+                    throw std::runtime_error("Unknown operand: " + s);
+                }
+            };
+
+            emitAuto(tokens[0]);
+            emitAuto(tokens[1]);
+            continue;
+        }
+
+        // Если дошли сюда - ошибка формата
+        //throw std::runtime_error("Invalid command format: " + cmd);
     }
 
     out.dataVariables = dataVariables;
     out.label = codeLabels;
     out.dataSize = dataOffset;
+    out.ThreadCount = ThrCount;
 
-    std::cout << "[Assembler] Assembly complete. Program size: " << out.programBytes.size()
-              << " bytes, Data size: " << dataOffset << " bytes" << std::endl;
-
+    //std::cout << "[Assembler] Assembly complete. Program size: " << out.programBytes.size() << " bytes, Data size: " << dataOffset << " bytes" << std::endl;
     return out;
 }

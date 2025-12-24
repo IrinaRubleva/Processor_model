@@ -5,28 +5,32 @@
 
 #include <iostream>
 
-//class Command;
+
+
+
+/*!
+*@brief Декодер. Достаёт команду из ProgramMemory и возвращает тип команды
+*       Содержит factory, в котором есть таблицы опкодов и названий команд
+*/
+
 class ProgramMemory;
-//class ConcreteCommandFactory;
+class CommandFactory;
 
 class Decoder
 {
 public:
-    Decoder() {
-        factory = std::make_unique<ConcreteCommandFactory>();
-        std::cout << "[Decoder] Default constructor - factory created at " << factory.get() << std::endl;
-    }
-    Decoder(std::unique_ptr<CommandFactory> factory) : factory(std::move(factory)) {}
-    std::unique_ptr<Command> decode(uint64_t &pc, ProgramMemory &mem);
-    CommandFactory& getFactory() { return *factory;}
-    // ConcreteCommandFactory* getFactory() { 
-    //     return dynamic_cast<ConcreteCommandFactory*>(factory.get()); 
-    // }
+    Decoder() : factory(std::make_unique<CommandFactory>()) {}
     
-    // const ConcreteCommandFactory* getFactory() const { 
-    //     return dynamic_cast<const ConcreteCommandFactory*>(factory.get()); 
-    // }
+    explicit Decoder(std::unique_ptr<CommandFactory> factory): factory(std::move(factory)) {}
 
+    std::unique_ptr<Command> decode(uint64_t& pc, ProgramMemory& mem);
+
+    CommandFactory& getFactory() { return *factory; }
+    CommandFactory& getFactory() const { return *factory; }
+
+     void setFactory(std::unique_ptr<CommandFactory> f) {
+        factory = std::move(f);
+    }
 private:
     std::unique_ptr<CommandFactory> factory;
 };

@@ -13,6 +13,17 @@
 #include <iostream>
 #include <iomanip>
 
+
+/*!
+*@brief Сам процессор. Процессор состоит из:
+•устройства управления
+•исполнительных устройств, выполняющих определенные наборы операторов
+•блока регистров общего назначения'
+•памяти программ
+•памяти данных
+*/
+
+
 class Processor
 {
 private:
@@ -28,15 +39,17 @@ private:
 
 public:
     explicit Processor(uint64_t busAddressSpace, size_t numRegisters);
-    //     : bus(std::make_unique<Bus>(busAddressSpace)),
-    //       controlUnit(std::make_unique<ControlUnit>()),
-    //       running(0),
-    //       currentTime(0)
-    // {
-    //     controlUnit->setBus(bus.get());
-    // }
+   
 
-    ~Processor() = default;
+    ~Processor(){
+         try {
+            if (controlUnit) {
+                controlUnit->safeShutdown(); 
+            }
+        } catch (...) {
+            std::cerr << "[Processor] Exception in destructor, ignoring..." << std::endl;
+        }
+    }
     Processor(const Processor &) = delete;
     Processor &operator=(const Processor &) = delete;
     Processor(Processor &&other) noexcept = default;
@@ -54,6 +67,10 @@ public:
         devices.push_back(std::move(dev));
     }
 
+
+    /*!
+    *@brief Установить ProgramMemory
+    */
     void setProgramMemory(std::unique_ptr<ProgramMemory> newProgMem)
     {
         programMemory = std::move(newProgMem);
@@ -64,6 +81,11 @@ public:
         }
     }
 
+
+    /*!
+    *@brief Загрузить команду
+    */
+     
     void loadProgram(const std::vector<uint8_t> &program)
     {
         if (programMemory)
@@ -76,20 +98,9 @@ public:
         }
     }
 
-    // void loadDataMemory(const std::vector<uint8_t> &data)
-    // {
-    //     auto cu = controlUnit.get();
-    //     if (!cu)
-    //         throw std::runtime_error("Processor::loadDataMemory: no control unit");
-    //     if (!bus)
-    //         throw std::runtime_error("Processor::loadDataMemory: no bus");
-
-    //     uint64_t base = cu->getDeviceAddress("DataMemory");
-    //     for (size_t i = 0; i < data.size(); ++i)
-    //     {
-    //         bus->write(static_cast<uint64_t>(base + i), data[i]);
-    //     }
-    // }
+    void setThreadCount(uint64_t thC){
+        controlUnit->setThreadCount(thC);
+    }
 
     void run();
 
@@ -113,7 +124,10 @@ public:
 
 
 
-
+    /*!
+    *@brief Очистка процессора
+    */
+     
     void reset() {
         running = false;
         
@@ -129,6 +143,10 @@ public:
         }
     }
 
+    /*!
+    *@brief Очистка DataMemory
+    */
+     
       void clearDataMemory() {
         auto* bus = getBus();
         if (!bus) return;
@@ -141,7 +159,12 @@ public:
         }
     }
     
-    // Очистка регистров GPR
+
+
+    /*!
+    *@brief Очистка регистров GPR
+    */
+     
     void clearRegisters() {
         auto* bus = getBus();
         if (!bus) return;

@@ -655,3 +655,304 @@ int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+
+
+
+
+
+
+
+
+
+//--------------------------StructTest--------
+struct TestStruct {
+    int value;
+    std::string name;
+    bool moved = false;
+    int* v;
+    
+    TestStruct() : value(0), name("default"), v(new int) {}
+    TestStruct(int v, std::string n) : value(v), name(n) {}
+    TestStruct(const TestStruct& other) : value(other.value), name(other.name), moved(false) {}
+    TestStruct(TestStruct&& other) noexcept : value(other.value), name(std::move(other.name)), moved(true) {
+        other.moved = true;
+    }
+    
+    TestStruct& operator=(const TestStruct& other) {
+        value = other.value;
+        name = other.name;
+        moved = false;
+        return *this;
+    }
+    
+    TestStruct& operator=(TestStruct&& other) noexcept {
+        value = other.value;
+        name = std::move(other.name);
+        moved = true;
+        other.moved = true;
+        return *this;
+    }
+    
+    bool operator==(const TestStruct& other) const {
+        return value == other.value && name == other.name;
+    }
+
+    ~TestStruct(){delete v;}
+};
+
+
+
+
+
+
+
+TEST(VectorStructTest, ConstructorsWithStruct) {
+    TestStruct s1(1, "first");
+    TestStruct s2(2, "second");
+    TestStruct s3(3, "third");
+    
+    Vector<TestStruct> v1{s1, s2, s3};
+    EXPECT_EQ(v1.size(), 3u);
+    EXPECT_EQ(v1[0], s1);
+    EXPECT_EQ(v1[1], s2);
+    EXPECT_EQ(v1[2], s3);
+    
+    Vector<TestStruct> v2(3, s1);
+    EXPECT_EQ(v2.size(), 3u);
+    for (size_t i = 0; i < 3; ++i) {
+        EXPECT_EQ(v2[i], s1);
+    }
+}
+
+TEST(VectorStructTest, CopyAndMoveSemanticsWithStruct) {
+    Vector<TestStruct> v1;
+    v1.push_back(TestStruct(1, "one"));
+    v1.push_back(TestStruct(2, "two"));
+    
+    Vector<TestStruct> v2 = v1;
+    EXPECT_EQ(v2.size(), v1.size());
+    EXPECT_EQ(v2[0], v1[0]);
+    EXPECT_EQ(v2[1], v1[1]);
+    
+    Vector<TestStruct> v3 = std::move(v1);
+    EXPECT_EQ(v3.size(), 2u);
+    EXPECT_TRUE(v1.empty());
+    
+    EXPECT_FALSE(v3[0].moved); 
+}
+
+TEST(VectorStructTest, InsertAndEmplaceWithStruct) {
+    Vector<TestStruct> v;
+    v.push_back(TestStruct(1, "a"));
+    v.push_back(TestStruct(3, "c"));
+    
+    TestStruct s2(2, "b");
+    auto it1 = v.insert(v.begin() + 1, s2);
+    EXPECT_EQ(v.size(), 3u);
+    EXPECT_EQ(v[0], TestStruct(1, "a"));
+    EXPECT_EQ(v[1], s2);
+    EXPECT_EQ(v[2], TestStruct(3, "c"));
+    EXPECT_EQ(*it1, s2);
+   
+    TestStruct s4(4, "d");
+    auto it2 = v.insert(v.end(), std::move(s4));
+    EXPECT_EQ(v.size(), 4u);
+    EXPECT_EQ(v[3], TestStruct(4, "d"));
+    EXPECT_TRUE(s4.moved); 
+    
+    auto it3 = v.emplace(v.begin() + 2, 5, "e");
+    EXPECT_EQ(v.size(), 5u);
+    EXPECT_EQ(v[2], TestStruct(5, "e"));
+    EXPECT_EQ(*it3, TestStruct(5, "e"));
+}
+
+TEST(VectorStructTest, EraseWithStruct) {
+    Vector<TestStruct> v;
+    v.push_back(TestStruct(1, "a"));
+    v.push_back(TestStruct(2, "b"));
+    v.push_back(TestStruct(3, "c"));
+    v.push_back(TestStruct(4, "d"));
+    v.push_back(TestStruct(5, "e"));
+    
+    auto it1 = v.erase(v.begin() + 1);
+    EXPECT_EQ(v.size(), 4u);
+    EXPECT_EQ(v[0], TestStruct(1, "a"));
+    EXPECT_EQ(v[1], TestStruct(3, "c"));
+    EXPECT_EQ(v[2], TestStruct(4, "d"));
+    EXPECT_EQ(v[3], TestStruct(5, "e"));
+    EXPECT_EQ(*it1, TestStruct(3, "c"));
+    
+    auto it2 = v.erase(v.begin() + 1, v.begin() + 3);
+    EXPECT_EQ(v.size(), 2u);
+    EXPECT_EQ(v[0], TestStruct(1, "a"));
+    EXPECT_EQ(v[1], TestStruct(5, "e"));
+    EXPECT_EQ(*it2, TestStruct(5, "e"));
+}
+
+TEST(VectorStructTest, ResizeWithStruct) {
+    TestStruct default_struct(0, "default");
+    
+    Vector<TestStruct> v;
+    v.push_back(TestStruct(1, "a"));
+    v.push_back(TestStruct(2, "b"));
+    
+    v.resize(1);
+    EXPECT_EQ(v.size(), 1u);
+    EXPECT_EQ(v[0], TestStruct(1, "a"));
+   
+    v.resize(3);
+    EXPECT_EQ(v.size(), 3u);
+    EXPECT_EQ(v[0], TestStruct(1, "a"));
+    EXPECT_EQ(v[1], TestStruct(0, "default"));
+    EXPECT_EQ(v[2], TestStruct(0, "default"));
+   
+    v.resize(5, TestStruct(99, "resized"));
+    EXPECT_EQ(v.size(), 5u);
+    EXPECT_EQ(v[3], TestStruct(99, "resized"));
+    EXPECT_EQ(v[4], TestStruct(99, "resized"));
+}
+
+TEST(VectorStructTest, AssignWithStruct) {
+    Vector<TestStruct> v;
+    v.push_back(TestStruct(1, "old"));
+    v.push_back(TestStruct(2, "old"));
+    
+    v.assign(3, TestStruct(99, "new"));
+    EXPECT_EQ(v.size(), 3u);
+    for (size_t i = 0; i < 3; ++i) {
+        EXPECT_EQ(v[i], TestStruct(99, "new"));
+    }
+    
+    v.assign({TestStruct(1, "a"), TestStruct(2, "b")});
+    EXPECT_EQ(v.size(), 2u);
+    EXPECT_EQ(v[0], TestStruct(1, "a"));
+    EXPECT_EQ(v[1], TestStruct(2, "b"));
+    \
+    std::vector<TestStruct> src = {TestStruct(10, "ten"), TestStruct(20, "twenty")};
+    v.assign(src.begin(), src.end());
+    EXPECT_EQ(v.size(), 2u);
+    EXPECT_EQ(v[0], TestStruct(10, "ten"));
+    EXPECT_EQ(v[1], TestStruct(20, "twenty"));
+}
+
+TEST(VectorStructTest, ReserveAndCapacityWithStruct) {
+    Vector<TestStruct> v;
+    v.push_back(TestStruct(1, "a"));
+    
+    EXPECT_LT(v.capacity(), 100u);
+    v.reserve(100);
+    EXPECT_GE(v.capacity(), 100u);
+    EXPECT_EQ(v.size(), 1u); 
+    EXPECT_EQ(v[0], TestStruct(1, "a"));
+  
+    for (int i = 2; i <= 10; ++i) {
+        v.push_back(TestStruct(i, "element"));
+    }
+    EXPECT_EQ(v.size(), 10u);
+}
+
+TEST(VectorStructTest, ClearAndReuseWithStruct) {
+    Vector<TestStruct> v;
+    v.push_back(TestStruct(1, "first"));
+    v.push_back(TestStruct(2, "second"));
+    
+    EXPECT_EQ(v.size(), 2u);
+    v.clear();
+    EXPECT_EQ(v.size(), 0u);
+    EXPECT_TRUE(v.empty());
+    
+    v.push_back(TestStruct(3, "third"));
+    EXPECT_EQ(v.size(), 1u);
+    EXPECT_EQ(v[0], TestStruct(3, "third"));
+}
+
+TEST(VectorStructTest, IteratorsWithStruct) {
+    Vector<TestStruct> v;
+    v.push_back(TestStruct(1, "a"));
+    v.push_back(TestStruct(2, "b"));
+    v.push_back(TestStruct(3, "c"));
+    
+    int sum = 0;
+    for (auto it = v.begin(); it != v.end(); ++it) {
+        sum += it->value;
+    }
+    EXPECT_EQ(sum, 6);
+    
+    const Vector<TestStruct>& cv = v;
+    sum = 0;
+    for (auto it = cv.begin(); it != cv.end(); ++it) {
+        sum += it->value;
+    }
+    EXPECT_EQ(sum, 6);
+    
+    std::string reverse_names;
+    for (auto rit = v.rbegin(); rit != v.rend(); ++rit) {
+        reverse_names += rit->name;
+    }
+    EXPECT_EQ(reverse_names, "cba");
+}
+
+TEST(VectorStructTest, ExceptionSafetyDuringInsert) {
+    struct ThrowableStruct {
+        int value;
+        int throw_at_construction;
+        
+        ThrowableStruct(int v, int t = -1) : value(v), throw_at_construction(t) {
+            if (throw_at_construction == 0) {
+                throw std::runtime_error("Construction failed");
+            }
+        }
+        
+        ThrowableStruct(const ThrowableStruct& other) : value(other.value), throw_at_construction(other.throw_at_construction) {
+            if (throw_at_construction == 1) {
+                throw std::runtime_error("Copy construction failed");
+            }
+        }
+    };
+    
+    Vector<ThrowableStruct> v;
+    v.push_back(ThrowableStruct(1));
+    v.push_back(ThrowableStruct(2));
+    
+    ThrowableStruct bad_struct(99, 1); 
+    
+    try {
+        v.insert(v.begin() + 1, bad_struct);
+        FAIL() << "Expected exception";
+    } catch (const std::runtime_error& e) {
+       
+        EXPECT_EQ(v.size(), 2u);
+        EXPECT_EQ(v[0].value, 1);
+        EXPECT_EQ(v[1].value, 2);
+    }
+}
+
+TEST(VectorStructTest, MoveWithDifferentAllocatorsWithStruct) {
+    Vector<TestStruct> v1;
+    v1.push_back(TestStruct(100, "hundred"));
+    v1.push_back(TestStruct(200, "two_hundred"));
+    
+    std::allocator<TestStruct> custom_alloc;
+    Vector<TestStruct> v2(std::move(v1), custom_alloc);
+    
+    EXPECT_EQ(v2.size(), 2u);
+    EXPECT_EQ(v2[0], TestStruct(100, "hundred"));
+    EXPECT_EQ(v2[1], TestStruct(200, "two_hundred"));
+    
+    EXPECT_FALSE(v1.get_allocator() == v2.get_allocator());
+}
+
+TEST(VectorStructTest, ComplexOperationsSequence) {
+    Vector<TestStruct> v;
+    
+    v.push_back(TestStruct(1, "start"));
+    v.insert(v.end(), TestStruct(2, "middle"));
+    v.emplace(v.begin() + 1, 3, "emplace");
+    v.resize(5, TestStruct(0, "resized"));
+    v.erase(v.begin() + 2, v.begin() + 4);
+    v.assign({TestStruct(10, "final"), TestStruct(20, "final")});
+    
+    EXPECT_EQ(v.size(), 2u);
+    EXPECT_EQ(v[0], TestStruct(10, "final"));
+    EXPECT_EQ(v[1], TestStruct(20, "final"));
+}

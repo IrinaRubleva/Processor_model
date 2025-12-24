@@ -3,38 +3,38 @@
     "numRegisters": 16,
     "controleUnitPeriod": 2,
     "entryPoint": 0,
+    "maxThreads": 4, 
     "devices": [
         {
             "name": "ProgramMemory",
             "type": "multi_memory",
             "base": 0,
-            "size": 512,
+            "size": 2048,
             "block": 1
         },
         {
             "name": "DataMemory",
             "type": "multi_memory",
-            "base": 1024,
+            "base": 2048,       
             "size": 256
         },
         {
             "name": "ALU",
-            "type": "alu_sync",
-            "base": 2048,
-            "size": 32,
-            "period": 1
+            "type": "alu_sync",  
+            "base": 2304,  
+            "period": 1,      
+            "size": 32
         },
         {
             "name": "GPR",
             "type": "multi_memory",
-            "base": 2240,
-            "size": 256
+            "base": 2336,         
+            "size": 64            
         }
     ],
-
     "opCode": [
         {
-            "opcode": 101,
+            "opcode": 1,
             "name": "INC",
             "type": "unary",
             "class": "IncCommand"
@@ -61,7 +61,7 @@
             "opcode": 10,
             "name": "ADD",
             "type": "binary",
-            "class": "AddCommand" 
+            "class": "AddCommand"
         },
         {
             "opcode": 11,
