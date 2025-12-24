@@ -1,3 +1,10 @@
+*
+!2ex/
+!2ex/*
+!.gitignore
+
+
+
 1/build
 1/tests/
 2ex/.vscode
