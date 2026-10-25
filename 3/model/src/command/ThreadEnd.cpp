@@ -1,9 +1,6 @@
 #include "../include/commands/ThreadEndCommand/_ThreadEnd.hpp"
 #include "../include/controleUnit.hpp"
 #include <iostream>
-#include <thread>
-#include <chrono>
-
 
 void ThreadEndCommand::compute(ControlUnit& cu) {
     uint64_t c = cu.getThreadCount();

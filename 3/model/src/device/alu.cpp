@@ -9,8 +9,6 @@ typedef uint64_t port_size;
 
 
 uint8_t ALUDevice_Synchron::read(port_size port) const {
-    //std::lock_guard<std::mutex> lock(state_mtx);
-
     if (port == 0) return opCode;
     if (port >= 1 && port <= 8) return operandA[port - 1];
     if (port >= 9 && port <= 16) return operandB[port - 9];
@@ -21,7 +19,6 @@ uint8_t ALUDevice_Synchron::read(port_size port) const {
 
 
 void ALUDevice_Synchron::write(port_size port, uint8_t value) {
-    //std::lock_guard<std::mutex> lock(state_mtx);
     if (port == 0) {
         opCode = value;
         return;
@@ -42,7 +39,6 @@ void ALUDevice_Synchron::write(port_size port, uint8_t value) {
 
 void ALUDevice_Synchron::tick(ControlUnit& cu)
 {
-    //копирую
     Command* cmd = currentCommand;
     uint8_t localOp = opCode;
     if (!cmd)

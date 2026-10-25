@@ -50,30 +50,30 @@ public:
         for (size_t addr = 0; addr < maxBytes; addr += bytesPerLine) {
            
             
-            // for (size_t i = 0; i < bytesPerLine; ++i) {
-            //     size_t currentAddr = addr + i;
-            //     if (currentAddr < maxBytes) {
-            //       //  std::cout << std::dec << std::setw(3) << std::setfill(' ') 
-            //       //            << static_cast<int>(read(currentAddr)) << " ";
-            //     } else {
-            //       //  std::cout << "    "; // пробелы для неполной строки
-            //     }
-            // }
+            for (size_t i = 0; i < bytesPerLine; ++i) {
+                size_t currentAddr = addr + i;
+                if (currentAddr < maxBytes) {
+                    std::cout << std::dec << std::setw(3) << std::setfill(' ') 
+                             << static_cast<int>(read(currentAddr)) << " ";
+                } else {
+                    std::cout << "    ";
+                }
+            }
             
         
-            // for (size_t i = 0; i < bytesPerLine; ++i) {
-            //     size_t currentAddr = addr + i;
-            //     if (currentAddr < maxBytes) {
-            //         uint8_t byte = read(currentAddr);
-            //         if (byte >= 32 && byte <= 126) { 
-            //            // std::cout << static_cast<char>(byte);
-            //         } else {
-            //            // std::cout << ".";
-            //         }
-            //     }
-            // }
+            for (size_t i = 0; i < bytesPerLine; ++i) {
+                size_t currentAddr = addr + i;
+                if (currentAddr < maxBytes) {
+                    uint8_t byte = read(currentAddr);
+                    if (byte >= 32 && byte <= 126) { 
+                        std::cout << static_cast<char>(byte);
+                    } else {
+                        std::cout << ".";
+                    }
+                }
+            }
             
-           // std::cout << std::endl;
+           std::cout << std::endl;
         }
     }
 };

@@ -1,8 +1,0 @@
-.data:
-    result, DD, 0
-
-.threadInit:
-    MOV R1, 5
-    INC R1
-    MOV result, R1
-.threadEnd
